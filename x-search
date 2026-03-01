@@ -1,0 +1,156 @@
+#!/bin/bash
+# x-search — Search X/Twitter via Grok on OpenRouter
+# Usage: x-search "query" [--from DATE] [--to DATE] [--handles @user1,@user2] [--model MODEL] [--raw]
+#
+# Examples:
+#   x-search "AI agents"
+#   x-search "bitcoin ETF" --from 2026-02-01 --to 2026-02-15
+#   x-search "GPU shortage" --handles @elonmusk,@sama
+#   x-search "AI agents" --model x-ai/grok-4:online   # use bigger model
+#   x-search "AI agents" --raw                          # output raw JSON
+#
+# Cost: ~$0.005/search (web search) + ~$0.001 tokens ≈ $0.006/query
+# Uses Grok 4.1 Fast via OpenRouter with native X/Twitter search
+
+set -euo pipefail
+
+# --- Config ---
+OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}"
+MODEL="${XSEARCH_MODEL:-x-ai/grok-4.1-fast:online}"
+MAX_TOKENS="${XSEARCH_MAX_TOKENS:-2000}"
+API_URL="https://openrouter.ai/api/v1/chat/completions"
+
+if [[ -z "$OPENROUTER_API_KEY" ]]; then
+  echo "❌ OPENROUTER_API_KEY not set. Get one at https://openrouter.ai/keys" >&2
+  exit 1
+fi
+
+# --- Parse args ---
+QUERY=""
+FROM_DATE=""
+TO_DATE=""
+HANDLES=""
+RAW=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --from)   FROM_DATE="$2"; shift 2 ;;
+    --to)     TO_DATE="$2"; shift 2 ;;
+    --handles) HANDLES="$2"; shift 2 ;;
+    --model)  MODEL="$2"; shift 2 ;;
+    --raw)    RAW=true; shift ;;
+    --help|-h)
+      head -12 "$0" | tail -11 | sed 's/^# //' | sed 's/^#//'
+      exit 0
+      ;;
+    *)
+      if [[ -z "$QUERY" ]]; then
+        QUERY="$1"
+      else
+        QUERY="$QUERY $1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$QUERY" ]]; then
+  echo "Usage: x-search \"query\" [--from DATE] [--to DATE] [--handles @user1,@user2]" >&2
+  exit 1
+fi
+
+# --- Build prompt ---
+PROMPT="Search X/Twitter for: $QUERY"
+
+if [[ -n "$FROM_DATE" ]] || [[ -n "$TO_DATE" ]]; then
+  PROMPT="$PROMPT (date range:"
+  [[ -n "$FROM_DATE" ]] && PROMPT="$PROMPT from $FROM_DATE"
+  [[ -n "$TO_DATE" ]] && PROMPT="$PROMPT to $TO_DATE"
+  PROMPT="$PROMPT)"
+fi
+
+if [[ -n "$HANDLES" ]]; then
+  PROMPT="$PROMPT (focus on posts from: $HANDLES)"
+fi
+
+PROMPT="$PROMPT
+
+Return the most relevant and recent posts. For each post include:
+- The author's @handle and display name
+- The full post text
+- The direct link to the post (x.com URL)  
+- Approximate date/time
+- Engagement metrics if available (likes, reposts, views)
+
+Aim for 5-10 posts. Prioritize posts with high engagement and substantive content over noise."
+
+# --- Build JSON payload ---
+PAYLOAD=$(jq -n \
+  --arg model "$MODEL" \
+  --arg prompt "$PROMPT" \
+  --argjson max_tokens "$MAX_TOKENS" \
+  '{
+    model: $model,
+    messages: [
+      {
+        role: "system",
+        content: "You are a research assistant that searches X/Twitter. Return structured results with direct links. Be specific and factual. Always include the x.com URL for each post."
+      },
+      {
+        role: "user", 
+        content: $prompt
+      }
+    ],
+    max_tokens: $max_tokens
+  }')
+
+# --- Call API ---
+RESPONSE=$(curl -s --max-time 60 "$API_URL" \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "HTTP-Referer: https://github.com/mordechaipotash/x-search" \
+  -H "X-Title: x-search" \
+  -d "$PAYLOAD")
+
+# --- Check for errors ---
+ERROR=$(echo "$RESPONSE" | jq -r '.error.message // empty' 2>/dev/null)
+if [[ -n "$ERROR" ]]; then
+  echo "❌ API Error: $ERROR" >&2
+  exit 1
+fi
+
+# --- Output ---
+if [[ "$RAW" == "true" ]]; then
+  echo "$RESPONSE" | jq '.'
+  exit 0
+fi
+
+# Extract content
+CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "No results"' 2>/dev/null)
+
+# Extract annotations (tweet links)
+ANNOTATIONS=$(echo "$RESPONSE" | jq -r '
+  .choices[0].message.annotations // [] | 
+  map(select(.type == "url_citation")) |
+  if length > 0 then
+    "\n📎 Sources:\n" + (map("  • " + .url_citation.url) | join("\n"))
+  else ""
+  end
+' 2>/dev/null)
+
+# Extract cost info
+COST=$(echo "$RESPONSE" | jq -r '
+  .usage // {} |
+  "💰 Cost: $" + (.cost // 0 | tostring) + 
+  " | Tokens: " + (.prompt_tokens // 0 | tostring) + " in / " + 
+  (.completion_tokens // 0 | tostring) + " out" +
+  " | Searches: " + (.server_tool_use.web_search_requests // 0 | tostring)
+' 2>/dev/null)
+
+echo "$CONTENT"
+echo ""
+echo "$ANNOTATIONS"
+echo ""
+echo "---"
+echo "$COST"
+echo "🤖 Model: $MODEL"
