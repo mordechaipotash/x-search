@@ -8,6 +8,10 @@
 
 <p align="center"><i>⬆️ Auto-playing preview — <a href="https://github.com/mordechaipotash/x-search/raw/main/assets/demo.mp4">click here for full video with audio</a></i></p>
 
+
+https://github.com/user-attachments/assets/da15f319-f7f4-4f3b-94b0-1b8c9b244608
+
+
 151 lines of bash. One dependency you already have (`curl`, `jq`). Searches live X/Twitter posts through Grok's native X search on [OpenRouter](https://openrouter.ai). Returns handles, post text, direct links, timestamps, and engagement metrics.
 
 ```
