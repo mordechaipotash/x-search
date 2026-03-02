@@ -2,7 +2,9 @@
 
 **Search X/Twitter from your terminal. No Twitter API key needed.**
 
-<video src="https://github.com/mordechaipotash/x-search/raw/main/assets/demo.mp4" width="100%" autoplay loop muted playsinline></video>
+[![Watch the demo](assets/thumbnail.png)](https://github.com/mordechaipotash/x-search/raw/main/assets/demo.mp4)
+
+> 🎬 *Click to watch the demo video (x-search)*
 
 ---
 
