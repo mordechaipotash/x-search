@@ -221,7 +221,6 @@ graph TD
     BM -->|feeds context to| AML
     AML -->|schedules| MN
     LV -->|voices for| QB[📱 qinbot]
-    BM -->|renders to| BC[🖥️ brain-canvas]
 
     style XS fill:#ff6b6b,stroke:#e03131,color:#fff
     style MN fill:#9775fa,stroke:#7950f2,color:#fff
@@ -229,13 +228,11 @@ graph TD
     style LV fill:#fff8e1,stroke:#d29922,color:#1a1a1a
     style AML fill:#f0fff4,stroke:#3fb950,color:#1a1a1a
     style QB fill:#f3e8ff,stroke:#8b5cf6,color:#1a1a1a
-    style BC fill:#fff0f0,stroke:#f85149,color:#1a1a1a
 ```
 
 | Repo | What | Stars |
 |------|------|-------|
 | [brain-mcp](https://github.com/mordechaipotash/brain-mcp) | Memory — 25 MCP tools, cognitive prosthetic | ⭐ 17 |
-| [brain-canvas](https://github.com/mordechaipotash/brain-canvas) | Visual display for any LLM | ⭐ 11 |
 | [local-voice-ai](https://github.com/mordechaipotash/local-voice-ai) | Voice — Kokoro TTS + Parakeet STT, zero cloud | ⭐ 1 |
 | [agent-memory-loop](https://github.com/mordechaipotash/agent-memory-loop) | Maintenance — cron, context windows, STATE.json | ⭐ 1 |
 | **[x-search](https://github.com/mordechaipotash/x-search)** | **This repo** — search X/Twitter via Grok | 🆕 |
