@@ -2,6 +2,12 @@
 
 **Search X/Twitter from your terminal — real-time, via Grok. No Twitter API key needed.**
 
+<p align="center">
+  <img src="assets/demo-autoplay.gif" alt="x-search Demo" width="640"/>
+</p>
+
+<p align="center"><i>⬆️ Auto-playing preview — <a href="https://github.com/mordechaipotash/x-search/raw/main/assets/demo.mp4">click here for full video with audio</a></i></p>
+
 151 lines of bash. One dependency you already have (`curl`, `jq`). Searches live X/Twitter posts through Grok's native X search on [OpenRouter](https://openrouter.ai). Returns handles, post text, direct links, timestamps, and engagement metrics.
 
 ```
